@@ -19,8 +19,7 @@ export class DivinaElement extends LitElement {
       margin: 0 auto;
     }
 
-    :host > div.container,
-    :host > div.container > div {
+    :host > div.container {
       display: flex;
       flex-grow: 1;
       flex-shrink: 1;
@@ -174,6 +173,29 @@ export class DivinaElement extends LitElement {
     };
   }
 
+  public get pageStyles() {
+    const padding = 20;
+    const widthZoomFactor = this.clientWidth / (this.currentPanel?.Width ?? 0 + padding);
+    const heightFactor = this.clientHeight / (this.currentPanel?.Height ?? 0 + padding);
+    let zoom = '';
+
+    let translateX = this.currentPanel?.X ?? 0;
+    let translateY = this.currentPanel?.Y ?? 0;
+    if (widthZoomFactor < heightFactor) {
+      zoom = `${widthZoomFactor}`;
+      translateY = translateY / 2;
+    } else {
+      zoom = `${heightFactor}`;
+      translateX = translateX / 2;
+    }
+
+    return {
+      zoom,
+      'transform-origin': 'center',
+      transform: `translate(-${translateX}px, -${translateY}px)`,
+    };
+  }
+
   public GoFirst() {
     this.pageIdx = 0;
     this.panelIdx = 0;
@@ -267,7 +289,7 @@ export class DivinaElement extends LitElement {
       return nothing;
     }
 
-    return html` <div class="${imageClass}">
+    return html`<div class="${imageClass}" style="${styleMap(this.pageStyles)}">
       <img src="${this.comicPageUrl}" />
     </div>`;
   }

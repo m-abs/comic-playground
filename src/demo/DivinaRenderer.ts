@@ -17,6 +17,12 @@ export default class DivinaRenderer extends LitElement {
   @property()
   private canGoForward = false;
 
+  @property()
+  private currentPageNumber = 0;
+
+  @property()
+  private numberOfPages = 0;
+
   @query('#divina')
   divinaEl: DivinaElement;
 
@@ -39,6 +45,8 @@ export default class DivinaRenderer extends LitElement {
   public positionChanged = () => {
     this.canGoBack = this.divinaEl?.canGoBack ?? false;
     this.canGoForward = this.divinaEl?.canGoForward ?? false;
+    this.currentPageNumber = this.divinaEl?.currentPageNumber ?? 0;
+    this.numberOfPages = this.divinaEl?.numberOfPages ?? 0;
   };
 
   protected renderControlButton(click: (e: Event) => void, isEnabled: boolean, label: string): TemplateResult {
@@ -53,7 +61,7 @@ export default class DivinaRenderer extends LitElement {
     return html`
       <div class="book-controls">
         ${this.renderControlButton(this.prevSegmentEvent, this.canGoBack, 'PREV')}
-        <div class="nav-idx"><span>${this.divinaEl?.currentPageNumber ?? 0} / ${this.divinaEl?.numberOfPages ?? 0}</span></div>
+        <div class="nav-idx"><span>${this.currentPageNumber ?? 0} / ${this.numberOfPages ?? 0}</span></div>
         ${this.renderControlButton(this.nextSegmentEvent, this.canGoForward, 'NEXT')}
       </div>
     `;
