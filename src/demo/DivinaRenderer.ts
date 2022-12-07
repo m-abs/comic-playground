@@ -9,21 +9,16 @@ export default class DivinaRenderer extends LitElement {
   public books = ['tts'];
 
   @property()
-  public selectedBook?: string = "tts";
-
-  private get canGoBack() {
-    return this.navIdx > 0;
-  }
-
-  private get canGoForward() {
-    return this.navIdx + 1 < 0;
-  }
-
-  @query("#divina")
-  DivinaElement: DivinaElement;
+  public selectedBook?: string = 'tts';
 
   @property()
-  public navIdx = 0;
+  private canGoBack = false;
+
+  @property()
+  private canGoForward = false;
+
+  @query('#divina')
+  divinaEl: DivinaElement;
 
   private buttonControlClasses(enabled: boolean) {
     return classMap({
@@ -38,8 +33,13 @@ export default class DivinaRenderer extends LitElement {
 
     const divinaJsonUrl = `/divina/${this.selectedBook}/manifest.json`;
 
-    return html`<divina-element id="divina" divina="${divinaJsonUrl}"></divina-element>`;
+    return html`<divina-element id="divina" @position-changed="${this.positionChanged}" divina="${divinaJsonUrl}"></divina-element>`;
   }
+
+  public positionChanged = () => {
+    this.canGoBack = this.divinaEl?.canGoBack ?? false;
+    this.canGoForward = this.divinaEl?.canGoForward ?? false;
+  };
 
   protected renderControlButton(click: (e: Event) => void, isEnabled: boolean, label: string): TemplateResult {
     return html` <button @click="${click}" class="${this.buttonControlClasses(isEnabled)}" ?disabled="${!isEnabled}">${label}</button> `;
@@ -53,7 +53,7 @@ export default class DivinaRenderer extends LitElement {
     return html`
       <div class="book-controls">
         ${this.renderControlButton(this.prevSegmentEvent, this.canGoBack, 'PREV')}
-        <div class="nav-idx"><span>${this.navIdx + 1} / ${0}</span></div>
+        <div class="nav-idx"><span>${this.divinaEl?.currentPageNumber ?? 0} / ${this.divinaEl?.numberOfPages ?? 0}</span></div>
         ${this.renderControlButton(this.nextSegmentEvent, this.canGoForward, 'NEXT')}
       </div>
     `;
@@ -61,7 +61,7 @@ export default class DivinaRenderer extends LitElement {
 
   protected render(): TemplateResult {
     return html`
-      <header class="book-selector">${this.books.map((book) => html`<button data-book="${book}" @click="${this.selectBookEvent}">${book}</button>`)}</header>
+      <header class="book-selector">${this.books.map((book) => html`<button data-book="${book}" @click="${this.selectBookEvent}">${book}</button>`,)}</header>
 
       ${this.renderControls()}
 
@@ -72,29 +72,15 @@ export default class DivinaRenderer extends LitElement {
   }
 
   private readonly prevSegmentEvent = () => {
-    if (this.navIdx > 0) {
-      this.navIdx -= 1;
-    }
-
-    this.updateNarration();
+    this.divinaEl?.GoBack();
   };
 
   private readonly nextSegmentEvent = () => {
-    this.navIdx = 0;// Math.min(this.navLength - 1, this.navIdx + 1);
-
-    this.updateNarration();
+    this.divinaEl?.GoForward();
   };
 
-  private updateNarration() {
-    this.requestUpdate();
-  }
-
-  private readonly selectBookEvent = async (e: MouseEvent) => {
-    this.navIdx = 0;
-
+  private readonly selectBookEvent = (e: MouseEvent) => {
     this.selectedBook = (e.target as HTMLButtonElement).dataset.book;
-
-    this.requestUpdate();
   };
 
   // Define scoped styles right with your component, in plain CSS
@@ -145,19 +131,11 @@ export default class DivinaRenderer extends LitElement {
 
     :host .content-viewer {
       overflow: hidden;
+      display: flex;
     }
 
-    :host .content-viewer iframe {
-      border: 0;
-      padding: 0;
-      margin: 0 auto;
-      height: 100%;
-      width: 100vw;
-      opacity: 0;
-    }
-
-    :host .content-viewer iframe.loaded {
-      opacity: 1;
+    :host .content-viewer divina-element {
+      flex-grow: 1;
     }
 
     :host footer {

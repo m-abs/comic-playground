@@ -1,10 +1,4 @@
-/**
- * @license
- * Copyright 2019 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { TaJson } from 'ta-json-x';
@@ -14,25 +8,32 @@ import DivinaPublication from './DivinaPublication';
 export class DivinaElement extends LitElement {
   static override styles = css`
     :host {
-      display: block;
+      display: flex;
       padding: 0;
       margin: 0;
       position: relative;
+      height: inherit;
     }
 
-    :host > div.container, :host > div.container > div {
+    :host > div.container {
+      margin: 0 auto;
+    }
+
+    :host > div.container,
+    :host > div.container > div {
+      display: flex;
+      flex-grow: 1;
+      flex-shrink: 1;
+      height: 100%;
+      min-height: 0;
+    }
+
+    :host > div.container > div {
       position: absolute;
-      max-height: 100vh;
       top: 0;
       left: 0;
-      box-sizing: border-box;
     }
 
-    :host > div.container img {
-      max-height: 100vh;
-      max-width: 100vw;
-    }
-    
     :host div.balloon-highlight {
       background-color: rgba(116, 116, 116, 0.4);
     }
@@ -55,31 +56,35 @@ export class DivinaElement extends LitElement {
 
   private _divinaJsonUrl?: string;
 
-  @property()
-  public loading = true;
-
   public get divinaJsonUrl() {
     return this._divinaJsonUrl;
   }
 
-  @property({ attribute: "divina" })
+  @property({ attribute: 'divina' })
   public set divinaJsonUrl(value: string) {
-    if (this._divinaJsonUrl != value) {
+    if (this._divinaJsonUrl !== value) {
       this._divinaJsonUrl = new URL(value, location.href).href;
 
-      this._loadComic();
+      this._loadComic().catch((e) => console.error(e));
     }
   }
 
   @property()
   public pageIdx = 0;
 
+  private get hasPrevPage() {
+    return this.pageIdx > 0;
+  }
+
+  private get hasNextPage() {
+    return !!this.publication?.Guided?.[this.pageIdx + 1];
+  }
+
   private get page() {
     return this.publication?.Guided?.[this.pageIdx];
   }
 
-  private get readingItem()
-  {
+  private get readingItem() {
     return this.publication?.Spine?.[this.pageIdx];
   }
 
@@ -99,6 +104,14 @@ export class DivinaElement extends LitElement {
     return this.page?.Panels?.[this.panelIdx];
   }
 
+  private get hasPrevPanel() {
+    return this.panelIdx > 0;
+  }
+
+  private get hasNextPanel() {
+    return !!this.page?.Panels?.[this.panelIdx + 1];
+  }
+
   @property()
   public balloonIdx = 0;
 
@@ -106,42 +119,45 @@ export class DivinaElement extends LitElement {
     return this.currentPanel?.Balloons?.[this.balloonIdx];
   }
 
-  private get balloonClipPath()
-  {
+  private get hasPrevBalloon() {
+    return !!this.currentPanel?.Balloons?.[this.balloonIdx - 1];
+  }
+
+  private get hasNextBalloon() {
+    return !!this.currentPanel?.Balloons?.[this.balloonIdx + 1];
+  }
+
+  private get balloonClipPath() {
     return this.currentBalloon?.ClipPath;
   }
 
-  private get panelClipPath()
-  {
+  private get panelClipPath() {
     const readingItem = this.readingItem;
-    if (!readingItem)
-    {
+    if (!readingItem) {
       return null;
     }
 
     const { Height: pageHeight, Width: pageWidth } = readingItem;
 
     const panel = this.currentPanel;
-    if (!panel)
-    {
+    if (!panel) {
       return null;
     }
 
     const hash = new URL(panel.Href, this.comicPageUrl).hash;
 
     const pxRegexp = /#xywh=([\d]+),([\d]+),([\d]+),([\d]+)/;
-    const m = hash.match(pxRegexp);
-    if (!m)
-    {
+    const m = pxRegexp.exec(hash);
+    if (!m) {
       return null;
     }
 
-    const [, x, y, width, height ] = m.map((v) => Number(v));
+    const [, x, y, width, height] = m.map((v) => Number(v));
 
-    const topPct = y / pageHeight * 100;
-    const rightPct = 100 - (x + width) / pageWidth * 100;
-    const leftPct = x / pageWidth * 100;
-    const bottomPct = 100 - (y + height) / pageHeight * 100;
+    const topPct = (y / pageHeight) * 100;
+    const rightPct = 100 - ((x + width) / pageWidth) * 100;
+    const leftPct = (x / pageWidth) * 100;
+    const bottomPct = 100 - ((y + height) / pageHeight) * 100;
 
     return `inset(
       ${topPct}%
@@ -151,12 +167,78 @@ export class DivinaElement extends LitElement {
     )`;
   }
 
-  public get styles()
-  {
+  public get containerStyles() {
     return {
       '--balloon-clip-path': this.balloonClipPath,
       '--panel-clip-path': this.panelClipPath,
+    };
+  }
+
+  public GoFirst() {
+    this.pageIdx = 0;
+    this.panelIdx = 0;
+    this.balloonIdx = 0;
+  }
+
+  public GoLast() {
+    this.pageIdx = (this.publication?.Guided?.length ?? 0) - 1;
+    this.panelIdx = (this.page?.Panels?.length ?? 0) - 1;
+    this.balloonIdx = (this.currentPanel?.Balloons?.length ?? 0) - 1;
+  }
+
+  public GoBack() {
+    if (this.hasPrevBalloon) {
+      this.balloonIdx -= 1;
+      return;
     }
+
+    if (this.hasPrevPanel) {
+      this.panelIdx -= 1;
+      this.balloonIdx = Math.max(0, (this.currentPanel.Balloons?.length ?? 0) - 1);
+      return;
+    }
+
+    if (this.hasPrevPage) {
+      this.pageIdx -= 1;
+      this.panelIdx = Math.max(0, (this.page?.Panels?.length ?? 0) - 1);
+      this.balloonIdx = Math.max(0, (this.currentPanel.Balloons?.length ?? 0) - 1);
+      return;
+    }
+  }
+
+  public GoForward() {
+    if (this.hasNextBalloon) {
+      this.balloonIdx += 1;
+      return;
+    }
+
+    if (this.hasNextPanel) {
+      this.panelIdx += 1;
+      this.balloonIdx = 0;
+      return;
+    }
+
+    if (this.hasNextPage) {
+      this.pageIdx += 1;
+      this.panelIdx = 0;
+      this.balloonIdx = 0;
+    }
+  }
+
+  public get canGoBack() {
+    return this.hasPrevBalloon || this.hasPrevPanel || this.hasPrevPage;
+  }
+
+  public get canGoForward() {
+    return this.hasNextBalloon || this.hasNextPanel || this.hasNextPage;
+  }
+
+  public get numberOfPages() {
+    return this.publication?.Spine?.length ?? 0;
+  }
+
+  public get currentPageNumber() {
+    return this.pageIdx + 1;
   }
 
   private async _loadComic() {
@@ -170,24 +252,34 @@ export class DivinaElement extends LitElement {
       return html`<div>Loading</div>`;
     }
 
+    this.positionChanged();
+
     return html`
-      <div class="container" style=${styleMap(this.styles)}>
-        <div class="page">
-          <img src="${this.comicPageUrl}" />
-        </div>
-        <div class="panel-highlight">
-          <img src="${this.comicPageUrl}" />
-        </div>
-        <div class="balloon-highlight">
-          <img src="${this.comicPageUrl}" />
-        </div> 
+      <div class="container" style=${styleMap(this.containerStyles)}>
+        ${this.renderImage('page')} ${this.renderImage('panel-highlight', !!this.panelClipPath)}
+        ${this.renderImage('balloon-highlight', !!this.balloonClipPath)}
       </div>
     `;
+  }
+
+  private renderImage(imageClass: string, enabled = true) {
+    if (!enabled) {
+      return nothing;
+    }
+
+    return html` <div class="${imageClass}">
+      <img src="${this.comicPageUrl}" />
+    </div>`;
+  }
+
+  private positionChanged() {
+    const event = new CustomEvent('position-changed');
+    this.dispatchEvent(event);
   }
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'my-element': DivinaElement;
+    'divina-element': DivinaElement;
   }
 }

@@ -48,7 +48,10 @@
     "coverage": "jest --collect-coverage",
     "start": "cross-env NODE_ENV=development WATCH=true webpack serve",
     "test": "jest --watchAll",
-    "watch": "cross-env NODE_ENV=development WATCH=true webpack"
+    "watch": "cross-env NODE_ENV=development WATCH=true webpack",
+    "format": "eslint --fix 'src/**/*.ts'",
+    "lint": "npm eslint",
+    "eslint": "eslint -c .eslintrc.js --ext .ts src"
   },
   "dependencies": {
     "lit": "^2.4.1",

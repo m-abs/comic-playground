@@ -1,6 +1,8 @@
-node_modules/*
-docs/*
-docs-src/*
-rollup-config.js
-custom-elements.json
-web-dev-server.config.js
+node_modules
+dist
+webpack*
+custom.d.ts
+styleMock.js
+jest.config.js
+jest-config
+**/*.js
