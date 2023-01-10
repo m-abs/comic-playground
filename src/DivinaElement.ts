@@ -302,9 +302,11 @@ export default class DivinaElement extends LitElement {
       return nothing;
     }
 
-    return html`<div class="${imageClass}" style="${styleMap(this.pageStyles)}">
-      <img src="${this.comicPageUrl}" />
-    </div>`;
+    return html`
+      <div class="${imageClass}" style="${styleMap(this.pageStyles)}">
+        <img src="${this.comicPageUrl}" />
+      </div>
+    `;
   }
 
   private renderCaption() {
