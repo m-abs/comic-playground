@@ -1,5 +1,5 @@
-import { DivinaElement } from 'DivinaElement';
-import { css, html, LitElement, nothing, TemplateResult } from 'lit';
+import DivinaElement from 'DivinaElement';
+import { LitElement, TemplateResult, css, html, nothing } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
@@ -24,7 +24,7 @@ export default class DivinaRenderer extends LitElement {
   private numberOfPages = 0;
 
   @query('#divina')
-  divinaEl: DivinaElement;
+  public divinaEl: DivinaElement;
 
   private buttonControlClasses(enabled: boolean) {
     return classMap({
@@ -69,7 +69,7 @@ export default class DivinaRenderer extends LitElement {
 
   protected render(): TemplateResult {
     return html`
-      <header class="book-selector">${this.books.map((book) => html`<button data-book="${book}" @click="${this.selectBookEvent}">${book}</button>`,)}</header>
+      <header class="book-selector">${this.books.map((book) => html`<button data-book="${book}" @click="${this.selectBookEvent}">${book}</button>`)}</header>
 
       ${this.renderControls()}
 

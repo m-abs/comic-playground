@@ -1,8 +1,7 @@
-import { GuidedBalloon } from './GuidedBalloon';
+import TextElement from './TextElement';
 import { JsonElementType, JsonProperty, JsonType } from 'ta-json-x';
-import { GuidedLink } from './GuidedLink';
 
-export class GuidedPanel extends GuidedLink {
+export default class Panel {
   @JsonProperty('title')
   @JsonType(String)
   public Title?: string;
@@ -11,13 +10,17 @@ export class GuidedPanel extends GuidedLink {
   @JsonType(String)
   public Audio?: string;
 
+  @JsonProperty('fragment')
+  @JsonType(String)
+  public Fragment?: string;
+
   @JsonProperty('balloons')
-  @JsonElementType(GuidedBalloon)
-  public Balloons?: GuidedBalloon[];
+  @JsonElementType(TextElement)
+  public Balloons?: TextElement[];
 
   public get SizeInfo() {
     const pxRegexp = /#xywh=([\d]+),([\d]+),([\d]+),([\d]+)/;
-    const m = pxRegexp.exec(this.Href);
+    const m = pxRegexp.exec(this.Fragment);
     if (!m) {
       return null;
     }

@@ -1,11 +1,11 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, css, html, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { TaJson } from 'ta-json-x';
 import DivinaPublication from './DivinaPublication';
 
 @customElement('divina-element')
-export class DivinaElement extends LitElement {
+export default class DivinaElement extends LitElement {
   static override styles = css`
     :host {
       display: flex;
@@ -48,6 +48,19 @@ export class DivinaElement extends LitElement {
     :host div.panel-highlight img {
       clip-path: var(--panel-clip-path);
     }
+
+    :host > div.container > div.caption {
+      position: absolute;
+      left: unset;
+      top: unset;
+      right: 0;
+      bottom: 0;
+      font-weight: bold;
+      margin: 2em;
+      padding: 1em;
+      background-color: rgba(200, 200, 200, 0.9);
+      border-radius: 1rem;
+    }
   `;
 
   @property()
@@ -76,11 +89,11 @@ export class DivinaElement extends LitElement {
   }
 
   private get hasNextPage() {
-    return !!this.publication?.Guided?.[this.pageIdx + 1];
+    return !!this.publication?.Narration?.[this.pageIdx + 1];
   }
 
-  private get page() {
-    return this.publication?.Guided?.[this.pageIdx];
+  private get currentPage() {
+    return this.publication?.Narration?.[this.pageIdx];
   }
 
   private get readingItem() {
@@ -88,7 +101,7 @@ export class DivinaElement extends LitElement {
   }
 
   private get comicPageUrl() {
-    const path = this.page?.Href;
+    const path = this.currentPage?.Href;
     if (!path) {
       return null;
     }
@@ -100,7 +113,7 @@ export class DivinaElement extends LitElement {
   public panelIdx = 0;
 
   private get currentPanel() {
-    return this.page?.Panels?.[this.panelIdx];
+    return this.currentPage?.Panels?.[this.panelIdx];
   }
 
   private get hasPrevPanel() {
@@ -108,7 +121,7 @@ export class DivinaElement extends LitElement {
   }
 
   private get hasNextPanel() {
-    return !!this.page?.Panels?.[this.panelIdx + 1];
+    return !!this.currentPage?.Panels?.[this.panelIdx + 1];
   }
 
   @property()
@@ -139,11 +152,11 @@ export class DivinaElement extends LitElement {
     const { Height: pageHeight, Width: pageWidth } = readingItem;
 
     const panel = this.currentPanel;
-    if (!panel) {
+    if (!panel?.Fragment) {
       return null;
     }
 
-    const hash = new URL(panel.Href, this.comicPageUrl).hash;
+    const hash = panel.Fragment;
 
     const pxRegexp = /#xywh=([\d]+),([\d]+),([\d]+),([\d]+)/;
     const m = pxRegexp.exec(hash);
@@ -203,8 +216,8 @@ export class DivinaElement extends LitElement {
   }
 
   public GoLast() {
-    this.pageIdx = (this.publication?.Guided?.length ?? 0) - 1;
-    this.panelIdx = (this.page?.Panels?.length ?? 0) - 1;
+    this.pageIdx = (this.publication?.Narration?.length ?? 0) - 1;
+    this.panelIdx = (this.currentPage?.Panels?.length ?? 0) - 1;
     this.balloonIdx = (this.currentPanel?.Balloons?.length ?? 0) - 1;
   }
 
@@ -222,7 +235,7 @@ export class DivinaElement extends LitElement {
 
     if (this.hasPrevPage) {
       this.pageIdx -= 1;
-      this.panelIdx = Math.max(0, (this.page?.Panels?.length ?? 0) - 1);
+      this.panelIdx = Math.max(0, (this.currentPage?.Panels?.length ?? 0) - 1);
       this.balloonIdx = Math.max(0, (this.currentPanel.Balloons?.length ?? 0) - 1);
       return;
     }
@@ -279,7 +292,7 @@ export class DivinaElement extends LitElement {
     return html`
       <div class="container" style=${styleMap(this.containerStyles)}>
         ${this.renderImage('page')} ${this.renderImage('panel-highlight', !!this.panelClipPath)}
-        ${this.renderImage('balloon-highlight', !!this.balloonClipPath)}
+        ${this.renderImage('balloon-highlight', !!this.balloonClipPath)} ${this.renderCaption()}
       </div>
     `;
   }
@@ -292,6 +305,15 @@ export class DivinaElement extends LitElement {
     return html`<div class="${imageClass}" style="${styleMap(this.pageStyles)}">
       <img src="${this.comicPageUrl}" />
     </div>`;
+  }
+
+  private renderCaption() {
+    const caption = this.currentBalloon?.Text;
+    if (!caption) {
+      return nothing;
+    }
+
+    return html`<div class="caption">${caption}</div>`;
   }
 
   private positionChanged() {
