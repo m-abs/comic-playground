@@ -57,7 +57,7 @@
     "buffer": "^6.0.3",
     "lit": "^2.6.0",
     "process": "^0.11.10",
-    "r2-shared-js": "^1.0.65",
+    "r2-shared-js": "^1.0.70",
     "readium-css": "github:readium/readium-css",
     "ta-json-x": "^2.5.3",
     "util": "^0.12.5"
